@@ -1415,6 +1415,20 @@ var catalog = {
     {
       "aliases": [],
       "anchor": true,
+      "context": "GeneralEffectsPage",
+      "icon": "opacity",
+      "id": "general.effects.section.windows",
+      "path": [
+        "general",
+        "effects"
+      ],
+      "route": "general.effects",
+      "source": "GeneralEffectsPage.qml",
+      "title": "Windows"
+    },
+    {
+      "aliases": [],
+      "anchor": true,
       "context": "GeneralOverviewPage",
       "icon": "settings",
       "id": "general.section.interface",
@@ -2011,6 +2025,7 @@ function title(id) {
     case "general.bar.section.size-spacing": return qsTranslate("GeneralBarPage", "Size and spacing");
     case "general.bar.section.components": return qsTranslate("GeneralBarPage", "Components");
     case "general.effects.section.background": return qsTranslate("GeneralEffectsPage", "Background");
+    case "general.effects.section.windows": return qsTranslate("GeneralEffectsPage", "Windows");
     case "general.section.interface": return qsTranslate("GeneralOverviewPage", "Interface");
     case "general.section.system": return qsTranslate("GeneralOverviewPage", "System");
     case "general.section.applications": return qsTranslate("GeneralOverviewPage", "Applications");

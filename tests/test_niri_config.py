@@ -424,6 +424,41 @@ class ConfigurationContracts(unittest.TestCase):
         self.assertEqual(subprocess.run([script, 'write'] + args, capture_output=True).returncode, 0)
         self.assertEqual(before, self.main.read_bytes())
 
+    def test_window_rules_opacity(self):
+        with self.assertRaises(ValueError):
+            self.run_config('update', feature='window-rules', opacity=0.9, inactiveOpacity=0.9)
+        self.assertFalse(self.fragment('window-rules').exists())
+
+        state = self.run_config('setup', feature='window-rules')
+        self.assertEqual(state['fragments']['window-rules']['state'], 'ready')
+        path = self.fragment('window-rules')
+        self.assertEqual(path.read_text(), '// Managed by Clavis.\n// Default window opacity (100%).\n')
+        before_main = self.main.read_bytes()
+
+        self.run_config('update', feature='window-rules', opacity=0.90, inactiveOpacity=0.90)
+        self.assertEqual(path.read_text(), '// Managed by Clavis.\nwindow-rule {\n    opacity 0.9;\n}\n')
+        self.assertEqual(self.main.read_bytes(), before_main)
+
+        self.run_config('update', feature='window-rules', opacity=1.0, inactiveOpacity=0.85)
+        self.assertEqual(
+            path.read_text(),
+            '// Managed by Clavis.\nwindow-rule {\n    match is-active=false;\n    opacity 0.85;\n}\n',
+        )
+
+        self.run_config('update', feature='window-rules', opacity=0.95, inactiveOpacity=1.0)
+        self.assertEqual(
+            path.read_text(),
+            '// Managed by Clavis.\nwindow-rule {\n    opacity 0.95;\n}\n'
+            'window-rule {\n    match is-active=false;\n    opacity 1.0;\n}\n',
+        )
+
+        saved = path.read_bytes()
+        for bad in ({'opacity': 0.09}, {'opacity': 1.01}, {'inactiveOpacity': 0.05}, {'inactiveOpacity': 1.1}):
+            with self.subTest(bad=bad):
+                with self.assertRaisesRegex(ValueError, 'Invalid window opacity'):
+                    self.run_config('update', feature='window-rules', **bad)
+                self.assertEqual(path.read_bytes(), saved)
+
     def test_read_does_not_initialize(self):
         before = self.main.read_bytes()
         for feature in config.FRAGMENTS:

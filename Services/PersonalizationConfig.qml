@@ -850,6 +850,8 @@ Singleton {
     property real shellBackgroundOpacity: 1
     property bool shellBlurEnabled: false
     property bool shellBlurXray: true
+    property real windowOpacity: 1.0
+    property real windowInactiveOpacity: 1.0
     property bool keepSidebarsLoaded: true
     property var sidebarPositions: ({
                                         dashboard: "left",
@@ -1532,6 +1534,30 @@ Singleton {
         setValue("shellBlurXray", !!value);
     }
 
+    function normalizedWindowOpacity(value) {
+        return Math.round(normalizedBoundedReal(value, 1, 0.1, 1) * 100) / 100;
+    }
+
+    function setWindowOpacity(value) {
+        const next = normalizedWindowOpacity(value);
+        if (root.windowOpacity === next)
+            return;
+
+        root.windowOpacity = next;
+        root.save();
+        NiriConfigService.update("window-rules");
+    }
+
+    function setWindowInactiveOpacity(value) {
+        const next = normalizedWindowOpacity(value);
+        if (root.windowInactiveOpacity === next)
+            return;
+
+        root.windowInactiveOpacity = next;
+        root.save();
+        NiriConfigService.update("window-rules");
+    }
+
     function setDashboardSidebarSide(value) {
         const side = SidebarPolicy.normalizeSide(value, "left");
         if (side !== root.dashboardSidebarSide)
@@ -1624,11 +1650,13 @@ Singleton {
             return false;
 
         const leading = root.normalizedBarComponents(root.barLeadingComponents, []).filter(value => {
-            return value !== id;
-        });
+                                                                                               return value
+                                                                                               !== id;
+                                                                                           });
         const trailing = root.normalizedBarComponents(root.barTrailingComponents, leading).filter(value => {
-            return value !== id;
-        });
+                                                                                                      return value
+                                                                                                      !== id;
+                                                                                                  });
         const target = targetZone === "leading" ? leading : trailing;
         const numericIndex = Number(targetIndex);
         const insertionIndex = isFinite(numericIndex) ? Math.max(0, Math.min(target.length, Math.round(
@@ -1647,11 +1675,11 @@ Singleton {
             return false;
 
         const leading = root.barLeadingComponents.filter(value => {
-            return value !== id;
-        });
+                                                             return value !== id;
+                                                         });
         const trailing = root.barTrailingComponents.filter(value => {
-            return value !== id;
-        });
+                                                               return value !== id;
+                                                           });
         if (leading.length === root.barLeadingComponents.length && trailing.length
                 === root.barTrailingComponents.length)
             return false;
@@ -1694,7 +1722,7 @@ Singleton {
         const components = root.normalizedQuickSettingsComponents(root.quickSettingsComponents).filter(value
                                                                                                        => {
                                                                                                            return value
-                                                                                                                   !== id;
+                                                                                                           !== id;
                                                                                                        });
         const numericIndex = Number(targetIndex);
         const insertionIndex = isFinite(numericIndex) ? Math.max(0, Math.min(components.length, Math.round(
@@ -1709,8 +1737,8 @@ Singleton {
     function removeQuickSettingsComponent(componentId) {
         const id = String(componentId || "");
         const components = root.quickSettingsComponents.filter(value => {
-            return value !== id;
-        });
+                                                                   return value !== id;
+                                                               });
         if (components.length === root.quickSettingsComponents.length)
             return false;
 
@@ -1938,7 +1966,9 @@ Singleton {
             "effects": {
                 "shellBackgroundOpacity": root.shellBackgroundOpacity,
                 "shellBlurEnabled": root.shellBlurEnabled,
-                "shellBlurXray": root.shellBlurXray
+                "shellBlurXray": root.shellBlurXray,
+                "windowOpacity": root.windowOpacity,
+                "windowInactiveOpacity": root.windowInactiveOpacity
             },
             "keystone": {
                 "enabled": root.keystoneEnabled,
@@ -2085,6 +2115,8 @@ Singleton {
         root.shellBlurEnabled = typeof effects.shellBlurEnabled === "boolean" ? effects.shellBlurEnabled :
                                                                                 false;
         root.shellBlurXray = typeof effects.shellBlurXray === "boolean" ? effects.shellBlurXray : true;
+        root.windowOpacity = normalizedWindowOpacity(effects.windowOpacity);
+        root.windowInactiveOpacity = normalizedWindowOpacity(effects.windowInactiveOpacity);
         root.keystoneMediaProgressStyle = normalizedOption(root.keystoneMediaProgressOptions,
                                                            media.progressStyle, "wave");
         root.keystoneMediaCoverStyle = normalizedOption(root.keystoneMediaCoverOptions, media.coverStyle
@@ -2177,7 +2209,8 @@ Singleton {
             return true;
 
         return effects.shellBackgroundOpacity === undefined || effects.shellBlurEnabled === undefined
-                || effects.shellBlurXray === undefined;
+                || effects.shellBlurXray === undefined || effects.windowOpacity === undefined
+                || effects.windowInactiveOpacity === undefined;
     }
 
     function needsThemeMigration(parsed) {
@@ -2301,16 +2334,16 @@ Singleton {
             try {
                 parsed = JSON.parse(configFile.text().trim() || "{}");
                 shouldRepair = root.needsWallpaperMigration(parsed) || root.needsEffectsMigration(parsed)
-                        || root.needsThemeMigration(parsed) || root.needsEdgePositionMigration(parsed)
-                        || root.needsScrollingMigration(parsed);
+                || root.needsThemeMigration(parsed) || root.needsEdgePositionMigration(parsed)
+                || root.needsScrollingMigration(parsed);
                 root.loadFromObject(parsed);
                 shouldRepair = shouldRepair || JSON.stringify(parsed.wallpaper || {}) !== JSON.stringify(
-                            root.toJson().wallpaper) || JSON.stringify(parsed.effects || {})
-                        !== JSON.stringify(root.toJson().effects) || JSON.stringify(parsed.theme || {})
-                        !== JSON.stringify(root.toJson().theme) || JSON.stringify(parsed.bar || {}) !== JSON.stringify(
-                            root.toJson().bar) || JSON.stringify(parsed.keystone || {}) !== JSON.stringify(
-                            root.toJson().keystone) || JSON.stringify(parsed.desktopCards || {})
-                        !== JSON.stringify(root.toJson().desktopCards);
+                    root.toJson().wallpaper) || JSON.stringify(parsed.effects || {}) !== JSON.stringify(
+                    root.toJson().effects) || JSON.stringify(parsed.theme || {}) !== JSON.stringify(
+                    root.toJson().theme) || JSON.stringify(parsed.bar || {}) !== JSON.stringify(root.toJson(
+                                                                                                    ).bar) || JSON.stringify(
+                    parsed.keystone || {}) !== JSON.stringify(root.toJson().keystone) || JSON.stringify(
+                    parsed.desktopCards || {}) !== JSON.stringify(root.toJson().desktopCards);
             } catch (error) {
                 console.warn("PersonalizationConfig failed to load:", error);
                 shouldRepair = true;
@@ -2319,7 +2352,7 @@ Singleton {
             root.loaded = true;
             root.settingsLoaded();
             if (shouldRepair)
-                root.save();
+            root.save();
         }
         onLoadFailed: {
             root.loading = true;

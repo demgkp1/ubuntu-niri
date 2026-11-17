@@ -88,5 +88,60 @@ StyledFlickable {
                 message: BlurService.lastError
             }
         }
+
+        NiriSetupPrompt {
+            Layout.fillWidth: true
+            title: qsTr("Window opacity")
+            description: qsTr("Create or connect the Clavis window opacity rules.")
+            integrationState: NiriConfigService.state("window-rules")
+            busy: NiriConfigService.busy && NiriConfigService.activeFeature === "window-rules"
+            blocked: NiriConfigService.busy
+            error: NiriConfigService.error
+            onSetupRequested: NiriConfigService.setup("window-rules")
+        }
+
+        SettingsSection {
+            id: searchSection1
+            Layout.fillWidth: true
+            flat: true
+            title: searchAnchor1.title
+            iconName: "opacity"
+
+            SettingsSearchAnchor {
+                id: searchAnchor1
+                target: searchSection1
+                declaration:
+                    '{"id":"general.effects.section.windows","route":"general.effects","title":"Windows","context":"GeneralEffectsPage","icon":"opacity","aliases":[]}'
+            }
+
+            GeneralSliderSetting {
+                title: qsTr("Window opacity")
+                enabled: NiriConfigService.ready("window-rules")
+                from: 10
+                to: 100
+                stepSize: 1
+                suffix: "%"
+                value: Math.round(PersonalizationConfig.windowOpacity * 100)
+                onMoved: value => PersonalizationConfig.setWindowOpacity(value / 100)
+            }
+
+            GeneralSliderSetting {
+                title: qsTr("Inactive window opacity")
+                enabled: NiriConfigService.ready("window-rules")
+                from: 10
+                to: 100
+                stepSize: 1
+                suffix: "%"
+                value: Math.round(PersonalizationConfig.windowInactiveOpacity * 100)
+                onMoved: value => PersonalizationConfig.setWindowInactiveOpacity(value / 100)
+            }
+
+            InlineStatusBanner {
+                Layout.fillWidth: true
+                visible: NiriConfigService.errorFeature === "window-rules" && NiriConfigService.error !== ""
+                tone: "error"
+                message: NiriConfigService.error
+            }
+        }
     }
 }

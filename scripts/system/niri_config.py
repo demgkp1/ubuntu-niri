@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'vendor'))
 import kdl
 
 PRINT = kdl.PrintConfig(indent='    ', semicolons=True)
-FRAGMENTS = ('effects', 'cursor', 'layer-rules', 'binds', 'outputs', 'minimize-animation', 'hot-corners')
+FRAGMENTS = ('effects', 'cursor', 'layer-rules', 'binds', 'outputs', 'minimize-animation', 'hot-corners', 'window-rules')
 
 # Stable first-setup defaults. Existing fragments, including empty ones, are preserved.
 DEFAULT_BINDINGS = (
@@ -259,6 +259,22 @@ def initial(feature, request):
         if request.get('xray', True):
             return header + "// X-Ray is niri's default for client-requested effects.\n"
         return header + 'layer-rule {\n    match namespace="^clavis-shell-";\n    background-effect { xray false; };\n}\nwindow-rule {\n    match title="^(clavis-control-center(-[a-z-]+)?|clavis-file-picker)$";\n    background-effect { xray false; };\n}\n'
+    if feature == 'window-rules':
+        opacity = float(request.get('opacity', 1.0))
+        inactive = float(request.get('inactiveOpacity', 1.0))
+        if not (0.1 <= opacity <= 1.0) or not (0.1 <= inactive <= 1.0):
+            raise ValueError('Invalid window opacity')
+        opacity = round(opacity, 2)
+        inactive = round(inactive, 2)
+        if opacity >= 0.995 and inactive >= 0.995:
+            return header + "// Default window opacity (100%).\n"
+        lines = [header]
+        fmt = lambda v: (lambda s: s + '0' if s.endswith('.') else s)(f'{v:.2f}'.rstrip('0'))
+        if opacity < 0.995:
+            lines.append(f'window-rule {{\n    opacity {fmt(opacity)};\n}}\n')
+        if abs(inactive - opacity) >= 0.005:
+            lines.append(f'window-rule {{\n    match is-active=false;\n    opacity {fmt(inactive)};\n}}\n')
+        return ''.join(lines)
     size = int(request.get('size', 24))
     hide = int(request.get('hideAfter', 0))
     if not 12 <= size <= 128 or not 0 <= hide <= 5000:

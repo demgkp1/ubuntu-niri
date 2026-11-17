@@ -87,6 +87,11 @@ Singleton {
             return {
                 xray: PersonalizationConfig.shellBlurXray
             };
+        if (feature === "window-rules")
+            return {
+                opacity: PersonalizationConfig.windowOpacity,
+                inactiveOpacity: PersonalizationConfig.windowInactiveOpacity
+            };
         if (feature === "cursor")
             return {
                 theme: ThemeService.effectiveCursorTheme(),
@@ -162,7 +167,7 @@ Singleton {
             try {
                 response = JSON.parse(result.text);
                 if (response.schemaVersion !== 1)
-                    throw new Error("Unsupported configuration response");
+                throw new Error("Unsupported configuration response");
                 if (writing) {
                     if (code !== 0) {
                         root.error = response.error || qsTr("Unable to save changes");
@@ -173,7 +178,7 @@ Singleton {
                     }
                 }
                 if (response.fragments)
-                    root.readError = response.error || "";
+                root.readError = response.error || "";
                 if (response.catalog) {
                     root.actionCatalog = response.catalog;
                     root.catalogChecked = true;
@@ -189,7 +194,7 @@ Singleton {
                     }
                 }
                 if (code === 0 && writing)
-                    root.saved();
+                root.saved();
             } catch (e) {
                 if (writing) {
                     root.error = diagnostic.text.trim() || String(e);
